@@ -57,8 +57,10 @@ def find_jinfo(version, arch, jre=False):
   sel_jinfo_list.sort(key=jinfo_priority)
   return sel_jinfo_list
 
-def list_jvm(version, architecture, jre):
+def list_jvm(version, architecture, jre, latest):
   jinfo_list = find_jinfo(version, architecture, jre)
+  if latest and len(jinfo_list) > 1:
+    jinfo_list = jinfo_list[len(jinfo_list)- 1:]
   for jinfo in jinfo_list:
     alias = jinfo['alias']
     priority = jinfo['priority']
@@ -112,7 +114,7 @@ if __name__ == '__main__':
     exit(1)
 
   if args.verbose is True:
-    list_jvm(args.version, args.architecture, args.jre)
+    list_jvm(args.version, args.architecture, args.jre, args.latest)
   elif args.latest is True or args.version is not None:
     java_home = get_java_home(args.version, args.architecture, args.jre)
     if java_home is None:
