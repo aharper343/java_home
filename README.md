@@ -78,6 +78,8 @@ java_home --verbose
 * Improved handling for "JVMVersion"
 * Determining the current architecture is hardcoded because python reports `X86_64` and the JVM is using `amd64`
 * Locations of the JVM could vary from `/usr/lib/jvm`
+* Default handling return the current JDK directory
+* Better support for architectures
 
 ## Requirements
 

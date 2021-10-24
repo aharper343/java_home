@@ -2,16 +2,20 @@
 import glob
 import sys
 import os
+import argparse
 
 def default_architecture():
   return 'amd64'
+
+def default_location():
+  return '/usr/lib/jvm'
 
 def extract_java_home_from_jinfo_line(cmd, line):
   entry = ' '.join(line.rstrip().split(' ')[2:])
   end = os.sep.join(['bin', cmd])
   if entry.endswith(end):
     entry = entry[:-len(end)]
-  return entry
+  return entry.rstrip(os.sep)
 
 def extract_value_from_jinfo_line(param, line):
   return line.rstrip()[len(param)+1:]
@@ -35,7 +39,7 @@ def load_jinfo(filename, arch):
     return { 'name': name, 'alias': alias, 'priority': priority, 'arch': arch, 'jre': jre, 'jdk': jdk }
 
 
-def load_all_jinfo(basedir='/usr/lib/jvm',arch=default_architecture()):
+def load_all_jinfo(basedir=default_location(), arch=default_architecture()):
   jinfo_list = []
   for filename in glob.glob(f'{basedir}/.*-{arch}.jinfo'):
     jinfo_list.append(load_jinfo(filename, arch))
@@ -44,7 +48,7 @@ def load_all_jinfo(basedir='/usr/lib/jvm',arch=default_architecture()):
 def jinfo_priority(jinfo):
   return jinfo['priority']
 
-def find_jinfo(version, jre=False, arch='amd64'):
+def find_jinfo(version, arch, jre=False):
   jinfo_list = load_all_jinfo(arch=arch)
   sel_jinfo_list = []
   for jinfo in jinfo_list:
@@ -53,8 +57,8 @@ def find_jinfo(version, jre=False, arch='amd64'):
   sel_jinfo_list.sort(key=jinfo_priority)
   return sel_jinfo_list
 
-def list_jvm(version, jre):
-  jinfo_list = find_jinfo(version, jre)
+def list_jvm(version, architecture, jre):
+  jinfo_list = find_jinfo(version, architecture, jre)
   for jinfo in jinfo_list:
     alias = jinfo['alias']
     priority = jinfo['priority']
@@ -65,8 +69,8 @@ def list_jvm(version, jre):
       java_home = jinfo['jdk']
     print(f'{alias} {priority} {arch} {java_home}', file=sys.stderr)
 
-def get_java_home(version, jre):
-  jinfo_list = find_jinfo(version, jre)
+def get_java_home(version, architecture, jre):
+  jinfo_list = find_jinfo(version, architecture, jre)
   if len(jinfo_list) > 0:
     jinfo = jinfo_list[len(jinfo_list) - 1]
     if jre is True:
@@ -75,98 +79,51 @@ def get_java_home(version, jre):
       java_home = jinfo['jdk']
     return java_home
 
-def print_help():
-  print(f'{sys.argv[0]} - return a value for $JAVA_HOME')
-  print('\t-h or --help : This message')
-  print('\t-v or --version  VERSION\n\t\tFilters the returned JVMs by the major platform version in "JVMVersion" form.\n\t\tExample versions: "1.5+", or "1.6*".')
-  print('\t-V or --verbose\n\t\tPrints the matching list of JVMs and architectures to stderr.')
-  print('\t-e or --exec COMMAND [ARG ..]\n\t\tExecutes the command at $JAVA_HOME/bin/<command> and passes the remaining arguments.\n\t\tAny arguments to select which $JAVA_HOME to use must precede the --exec option.')
-  print('\t-j or --jre\n\t\tFilters to only matching JREs')
-  print('\t-l or --latest\n\t\tFilters to the most recent JVM.')
-  print('\tNOTE: -v or --version VERSION and -l --latest cannot be used at the same tine')
-  print('\t      -e or --exec COMMAND [ARG ...] must be used with either\n\t\t-v or --version VERSION\n\t\t-l or --latest')
-  exit(0)
-
-def print_usage(file):
-  print(f'Usage: {sys.argv[0]}: [--help/-h] [--version/-v VERSION] [--latest/-l] [--verbose/-V] [--jre/-j] [--exec COMMAMD [ARG ...]]', file=file)
-
-def print_error_and_exit(message):
-  print_usage(sys.stderr)
-  print(f'{sys.argv[0]}: error: {message}', file=sys.stderr)
-  exit(1)
-
-def arg_check_and_exit(arg, other_arg, is_set):
-  if is_set:
-    print_error_and_exit(f'{arg} cannot be set when {other_arg} is set')
-
 if __name__ == '__main__':
-  exec = False
-  verbose = False
-  latest = False
-  version = None
-  jre = False
-  args = []
-  i = 1
-  while i < len(sys.argv):
-    arg = sys.argv[i]
-    if arg == '--exec' or arg == '-e':
-      my_arg = '--exec/-e'
-      if exec is False:
-        arg_check_and_exit(my_arg, '--verbose/-V', verbose)
-        if latest is True or version is not None:
-          i = i + 1
-          if i >= len(sys.argv):
-            print_error_and_exit(f'{my_arg} must be followed by COMMAND')
-          exec = True
-          args = sys.argv[i:]
-          break
-        else:
-          print_error_and_exit(f'{my_arg} must appear after --version/-v VERSION or --latest/-l')
-      else:
-        print_error_and_exit(f'{my_arg} can appear only once')
-    elif arg == '--verbose' or arg == '-V':
-      my_arg = '--verbose/-V'
-      if verbose is False:
-        verbose = True
-      else:
-        print_error_and_exit(f'{my_arg} can appear only once')
-    elif arg == '--latest' or arg == '-l':
-      my_arg = '--latest/-l'
-      if latest is False:
-        arg_check_and_exit(f'{my_arg}','--version/-v VERSION', version is not None)
-        latest = True
-      else:
-        print_error_and_exit(f'{my_arg} can appear only once')
-    elif arg == '--version' or arg == '-v':
-      my_arg = '--version/-v VERSION'
-      if version is None:
-        arg_check_and_exit(f'{my_arg}','--latest/-l', latest)
-        i = i + 1
-        if i >= len(sys.argv):
-          print_error_and_exit(f'{my_arg} must be followed by VERSION')
-        version = sys.argv[i]
-      else:
-        print_error_and_exit(f'{my_arg} can appear only once')
-    elif arg == '--jre' or arg == '-j':
-      jre = True
-    elif arg == '--help' or arg == '-h':
-      print_help()
-    else:
-      print_error_and_exit(f'{arg} is unexpected')
-    i = i + 1
+  parser = argparse.ArgumentParser(description='return a value for $JAVA_HOME')
+  group = parser.add_mutually_exclusive_group()
+  group.add_argument('--version', '-v', type=str, action='store', help='Filters the returned JVMs by the major platform version in "JVMVersion" form. Example versions: "1.5+", or "1.6*".')
+  group.add_argument('--latest', '-l', action='store_true', default=False, help='Filters to the most recent JVM.')
+  parser.add_argument('--verbose', '-V', action='store_true', default=False, help='Prints the matching list of JVMs and architectures to stderr.')
+  parser.add_argument('--architecture', '-a', metavar='ARCH', action='store', default=default_architecture(), help='Filters to the provided architecture. Default is ' + default_architecture())
+  parser.add_argument('--jre', '-j', action='store_true', default=False, help='Filters to only matching JREs')
+  parser.add_argument('--exec', '-e', action='store_true', default=False, help='Executes the command at $JAVA_HOME/bin/<COMMAND> and passes the remaining arguments. Any arguments to select which $JAVA_HOME to use must precede the --exec option.')
+  parser.add_argument('cmd', type=str, metavar='COMMAND', nargs='?', help='COMMAND to execute')
+  parser.add_argument('cmd_args', type=str, metavar='ARG', nargs='*', help='Arguments for COMMAND')
 
-  if verbose is True:
-    list_jvm(version, jre)
-  elif latest is True or version is not None:
-    java_home = get_java_home(version, jre)
+  cli_args = sys.argv
+  cmd_args = None
+  for i in range(1, len(cli_args)):
+    if cli_args[i] in [ '--exec', '-e']:
+      if i + 1 < len(cli_args):
+        cmd_args = cli_args[i + 1:]
+      else:
+        parser.error('--exec/-e must be followed by COMMAND [ARG [ARG ...]]')
+        exit(1)
+      if i > 1:
+        cli_args = cli_args[0: i]
+      else:
+        cli_args = []
+      break
+  args = parser.parse_args(cli_args)
+
+  if cmd_args is not None and args.verbose is True:
+    parser.error('--exec/-e: not allowed with argument --verbose/-V')
+    exit(1)
+
+  if args.verbose is True:
+    list_jvm(args.version, args.architecture, args.jre)
+  elif args.latest is True or args.version is not None:
+    java_home = get_java_home(args.version, args.architecture, args.jre)
     if java_home is None:
       exit(1)
-    if exec is True:
+    if cmd_args is not None:
       os.putenv('JAVA_HOME', java_home)
-      cmd = os.sep.join([java_home, 'bin', args[0]])
-      exit(os.execv(cmd, args))
+      cmd = os.sep.join([java_home, 'bin', cmd_args[0]])
+      cmd_args[0] = cmd
+      exit(os.execv(cmd, cmd_args))
     else:
       print(java_home)
   else:
-    print_usage(sys.stderr)
-    exit(1) 
+    parser.print_usage()
+    exit(1)
