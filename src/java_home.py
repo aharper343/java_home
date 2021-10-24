@@ -8,7 +8,7 @@ def default_architecture():
 
 def extract_java_home_from_jinfo_line(cmd, line):
   entry = ' '.join(line.rstrip().split(' ')[2:])
-  end = f'/bin/{cmd}'
+  end = os.sep.join(['bin', cmd])
   if entry.endswith(end):
     entry = entry[:-len(end)]
   return entry
