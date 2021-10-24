@@ -30,28 +30,34 @@ version matching. i.e. 1.8+ 1.11*
 
 ## Usage
 
-`java_home` - return a value for `$JAVA_HOME`
+```plaintext
+usage: java_home [-h] [--version VERSION | --latest] [--verbose]
+                 [--architecture ARCH] [--jre] [--exec]
+                 [COMMAND] [ARG [ARG ...]]
 
-* `-h` or `--help` : This message
-* `-v` or `--version`  `VERSION`
-    Filters the returned JVMs by the major platform version in "JVMVersion" form.
-    Example versions: "1.5+", or "1.6*".
-* `-V` or `--verbose`
-    Prints the matching list of JVMs and architectures to stderr.
-* `-e` or `--exec` `COMMAND [ARG ..]`
-    Executes the command at `$JAVA_HOME/bin/<command>` and passes the remaining arguments.
-    Any arguments to select which `$JAVA_HOME` to use must precede the `--exec` option.
-* `-j` or `--jre`
-    Filters to only matching JREs
-* `-l` or `--latest`
-    Filters to the most recent JVM.
+return a value for $JAVA_HOME
 
-**NOTE**:
-* `-v` or `--version` `VERSION` and `-l` `--latest` cannot be used at the same tine
-* `-e` or `--exec` `COMMAND [ARG ...]` must be used with either
-    `-v` or `--version` `VERSION`
-    `-l` or `--latest`
+positional arguments:
+  COMMAND               COMMAND to execute
+  ARG                   Arguments for COMMAND
 
+optional arguments:
+  -h, --help            show this help message and exit
+  --version VERSION, -v VERSION
+                        Filters the returned JVMs by the major platform
+                        version in "JVMVersion" form. Example versions:
+                        "1.5+", or "1.6*".
+  --latest, -l          Filters to the most recent JVM.
+  --verbose, -V         Prints the matching list of JVMs and architectures to
+                        stderr.
+  --architecture ARCH, -a ARCH
+                        Filters to the provided architecture. Default is amd64
+  --jre, -j             Filters to only matching JREs
+  --exec, -e            Executes the command at $JAVA_HOME/bin/<COMMAND> and
+                        passes the remaining arguments. Any arguments to
+                        select which $JAVA_HOME to use must precede the --exec
+                        option.
+```
 ### Examples
 
 Set `$JAVA_HOME` to the JDK 1.8

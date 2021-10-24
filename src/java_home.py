@@ -48,11 +48,14 @@ def load_all_jinfo(basedir=default_location(), arch=default_architecture()):
 def jinfo_priority(jinfo):
   return jinfo['priority']
 
+def same_version(version, alias):
+  return f'-{version}.' in alias
+
 def find_jinfo(version, arch, jre=False):
   jinfo_list = load_all_jinfo(arch=arch)
   sel_jinfo_list = []
   for jinfo in jinfo_list:
-    if (version is None or f'-{version}.' in jinfo['alias']) and (jre is False or jinfo['jre'] is not None):
+    if (version is None or same_version(version, jinfo['alias'])) and (jre is False or jinfo['jre'] is not None):
       sel_jinfo_list.append(jinfo)
   sel_jinfo_list.sort(key=jinfo_priority)
   return sel_jinfo_list
@@ -86,6 +89,7 @@ if __name__ == '__main__':
   group = parser.add_mutually_exclusive_group()
   group.add_argument('--version', '-v', type=str, action='store', help='Filters the returned JVMs by the major platform version in "JVMVersion" form. Example versions: "1.5+", or "1.6*".')
   group.add_argument('--latest', '-l', action='store_true', default=False, help='Filters to the most recent JVM.')
+#  group.add_argument('--default', '-d', action='store_true', default=False, help='Filters to the current default JVM.')
   parser.add_argument('--verbose', '-V', action='store_true', default=False, help='Prints the matching list of JVMs and architectures to stderr.')
   parser.add_argument('--architecture', '-a', metavar='ARCH', action='store', default=default_architecture(), help='Filters to the provided architecture. Default is ' + default_architecture())
   parser.add_argument('--jre', '-j', action='store_true', default=False, help='Filters to only matching JREs')
