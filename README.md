@@ -76,6 +76,8 @@ java_home --verbose
 
 * Install script
 * Improved handling for "JVMVersion"
+* Determining the current architecture is hardcoded because python reports `X86_64` and the JVM is using `amd64`
+* Locations of the JVM could vary from `/usr/lib/jvm`
 
 ## Requirements
 
